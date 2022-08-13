@@ -5,7 +5,7 @@ import { Link } from '@react-navigation/native'
 
 const LinkBtn = ({item}) => {
     return (
-        <TouchableOpacity >
+        <TouchableOpacity style={styles.toplist}>
             <Image source={item.image} style={styles.listImage} />
             <Text style={styles.listTitle}>{item.title}</Text>
         </TouchableOpacity>
