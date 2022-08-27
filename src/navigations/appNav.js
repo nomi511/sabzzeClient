@@ -10,6 +10,7 @@ import ProductDetail from '../screens/productDetail'
 import Cart from '../screens/cart'
 import Location from '../screens/location'
 import OrderDetail from '../screens/orderDetail'
+import Places from '../screens/places'
 
 const Stack = createStackNavigator()
 
@@ -27,6 +28,7 @@ const AppNav = () => {
                 <Stack.Screen name='Cart' component={Cart} />
                 <Stack.Screen name='Location' component={Location} />
                 <Stack.Screen name='OrderDetail' component={OrderDetail} />
+                <Stack.Screen name='Places' component={Places} />
             </Stack.Navigator>
 
         </View>

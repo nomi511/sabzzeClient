@@ -1,19 +1,39 @@
-import React from 'react'
-import { View, TextInput, TouchableOpacity , StyleSheet} from 'react-native'
+import React, {useState} from 'react'
+import { View, TextInput, TouchableOpacity , StyleSheet, Alert} from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import {COLORS} from '../assets/theme'
 import { useNavigation } from '@react-navigation/core'
 
 const SearchBar = () => {
 
+
+    const [searchTxt, setsearchTxt] = useState('')
+
+
     const navigation = useNavigation()
+
+
+    const navigateTo = (val)=>{
+        if(searchTxt)
+        {
+            navigation.navigate(val)
+        }else{
+            Alert.alert('Empty Search', '\nPlease enter name of the product you are searching for...')
+        }
+    }
 
     return (
         <View style={styles.container}>
 
             <View style={styles.searchBar}>
-                <TextInput style={styles.searchInput} placeholder="Search" onSubmitEditing={()=> navigation.navigate('Search')} />
-                <TouchableOpacity style={styles.searchIcon} onPress={()=> navigation.navigate('Search')}>
+                <TextInput 
+                    style={styles.searchInput} 
+                    placeholder="Search" 
+                    onSubmitEditing={()=> navigateTo('Search')} 
+                    value={searchTxt} 
+                    onChangeText={txt=> setsearchTxt(txt)}
+                />
+                <TouchableOpacity style={styles.searchIcon} onPress={()=> navigateTo('Search')}>
                     <Ionicons name="md-search" size={25} color='#52DB8C' />
                 </TouchableOpacity>
             </View>
@@ -42,7 +62,8 @@ const styles= StyleSheet.create({
         borderColor: COLORS.primary,
         marginTop: 15,
         paddingLeft: 30,
-        fontSize: 17
+        fontSize: 17,
+        backgroundColor: COLORS.white
         
     },
 

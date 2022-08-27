@@ -1,24 +1,27 @@
 import React, {useState, useEffect} from 'react'
-import { View, Text, StyleSheet,Image, TextInput, TouchableWithoutFeedback, Keyboard, TouchableWithoutFeedbackBase } from 'react-native'
+import { View, Text, StyleSheet,Image, TouchableWithoutFeedback } from 'react-native'
 import {COLORS} from '../assets/theme'
-import { BackBtn, Button } from '../components'
-import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps'
+import { BackBtn, Button,  } from '../components'
+import MapView, { PROVIDER_GOOGLE} from 'react-native-maps'
 import marker from '../assets/images/locationMarker.png'
 import * as myLocation from 'expo-location'
-import Geocoder from 'react-native-geocoder'
-import axios from 'axios'
+import { useNavigation } from '@react-navigation/core'
+import { useSelector } from 'react-redux'
 
 const Location = () => {
 
-    const [region, setregion] = useState({
-        latitude: 33.6907,
-        longitude: 73.0057,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05
-    })
+    const navigation = useNavigation()
 
-    const [selection, setselect] = useState({ start: 0, end: 0 })
 
+    // redux
+
+    const {user} = useSelector(state=>state.user)
+    console.log("\n\n\t User: "+ JSON.stringify(user))
+
+    // ----------------------
+
+
+    const [region, setregion] = useState(user.region)
 
     
     
@@ -27,29 +30,14 @@ const Location = () => {
     const [address, setaddress] = useState('')
     
     const getAddress = async(lat, lng) =>{
-        
-        const apikey = 'AIzaSyCRbrRcl9QRG2bPuqV--x-2KZbk43VBYug'
 
-        const mylink = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apikey}`
-        const res = await axios.get(mylink)
-        const newaddr = res.data.results[0].formatted_address
-        setaddress(newaddr)
-    }
+        let myaddr = await myLocation.reverseGeocodeAsync({latitude:lat,longitude:lng})
 
-    const txtonChange = (txt) =>{
-        setaddress(txt)
-    }
+        const formattedAddr = `${myaddr[0]?.name}, ${myaddr[0]?.street}, ${myaddr[0]?.district}, ${myaddr[0]?.city}, ${myaddr[0]?.region}`
 
-    
-    const getloc = async() =>{
-        let location = await myLocation.getCurrentPositionAsync({});
-        setregion({ 
-            latitude: location.coords.latitude, 
-            longitude: location.coords.longitude, 
-            latitudeDelta: 0.003, 
-            longitudeDelta: 0.003
-        });
-        
+        setaddress(formattedAddr)
+
+
     }
 
 
@@ -60,63 +48,68 @@ const Location = () => {
 
 
     useEffect(() => {
-        getloc()
+        
+        regionChange(user.region)
 
-        
-        
-    }, [])
+    }, [user])
 
 
     return (
-        <TouchableWithoutFeedback onPress={()=> Keyboard.dismiss()}>
-        <View style={{flex:1, alignItems: 'center'}}>
-
-           
-
-            <View style={styles.header}>
-                <View style={{flex:2, marginTop: 5}}>
-                    <BackBtn />
-                </View>
-                <Text style={styles.title}>Confirm Location</Text>
-            </View>
-
-            <MapView 
-                style={{height: '100%', width: '100%'}}
-                provider={PROVIDER_GOOGLE}
-                initialRegion={region}
-                region={region}
-                onRegionChangeComplete={regionChange}
-            />
-
-            <Image source={marker} style={[
-                {width: 40,height: 40, resizeMode: 'cover'},
-                styles.markerStyles
-                ]} 
-            />
-
-
-            <View style={styles.locationView}>
-                <Image source={marker} style={styles.imgIcon} 
-                />
-                <TextInput 
-                    style={styles.locTxt}
-                    selection={selection}
-                    onFocus={()=> setselect({start: (address.length), end: (address.length)})}
-                    placeholder='location' 
-                    onChangeText={txt=>txtonChange(txt)}
-                    value={address} 
-                />
-            </View>
-
-            <View style={styles.btn}>
-                <Button title="Confirm" page="OrderDetail" bgcolor={COLORS.primary} />
-            </View>
-
+        <TouchableWithoutFeedback>
+            {user&&(
+            <View style={{flex:1, alignItems: 'center'}}>
 
             
 
-        </View>
+                <View style={styles.header}>
+                    <View style={{flex:2, marginTop: 5}}>
+                        <BackBtn />
+                    </View>
+                    <Text style={styles.title}>Confirm Location</Text>
+                </View>
 
+                <MapView 
+                    style={{height: '100%', width: '100%'}}
+                    provider={PROVIDER_GOOGLE}
+                    initialRegion={region}
+                    region={region}
+                    onRegionChangeComplete={regionChange}
+                />
+
+                <Image source={marker} style={[
+                    {width: 40,height: 40, resizeMode: 'cover'},
+                    styles.markerStyles
+                    ]} 
+                />
+
+
+                <View style={styles.locationArea}>
+                    
+                    <TouchableWithoutFeedback onPress={()=> navigation.navigate('Places')}>
+                        {address?<View style={styles.locationView} >
+                            <View style={styles.imgView} >
+                                <Image 
+                                    source={marker} 
+                                    style={styles.imgIcon} 
+                                />
+                            </View>
+                            <View style={styles.txtView}>
+                                <Text style={styles.locTxt} numberOfLines={1} > {address} </Text>
+                            </View>
+                        </View>:<></>}
+                    </TouchableWithoutFeedback>
+
+                </View>
+
+                <View style={styles.btn}>
+                    {address?<Button title="Confirm" page="OrderDetail" bgcolor={COLORS.primary} />: <></>}
+                </View>
+
+
+                
+
+            </View>
+            )}
         </TouchableWithoutFeedback>
     )
 }
@@ -144,32 +137,80 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 50
     },
-    locationView: {
+    locationArea:{
         position: 'absolute',
-        width: '90%',
+        width: '100%',
         height: 50,
         top: 70,
-        justifyContent: 'center',
+    },
+    locationView: {
+        width: '90%',
+        marginLeft: '5%',
+        height: 50,
+        alignItems: 'center',
         borderRadius: 50,
         borderWidth: 2,
         borderColor: COLORS.primary,
         backgroundColor: COLORS.white,
         flexDirection: 'row',
     },
-    imgIcon:{
+    searchView:{
+        marginTop: -15
+    },
+    imgView:{
         flex: 1,
+        width: 45,
+        height: 45,
+        resizeMode: 'cover',
+        borderRadius: 50,
+        marginLeft: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.primaryLight,
+        marginRight: 10
+    },
+    imgIcon:{
         width: 25,
         height: 25,
         resizeMode: 'cover',
-        marginTop: 10,
-        marginLeft: 5
+    },
+    txtView:{
+        flex: 6,
+        marginRight: 15,
+        overflow: 'hidden',
     },
     locTxt:{
-        flex: 11,
-        marginLeft: 10,
         fontSize: 15,
-        paddingRight:10
-    }
+    },
+
+
+
+    searchBar:{
+        height: 70,
+        alignItems:"center"
+
+    },
+
+    searchInput:{
+        borderWidth: 2,
+        height: 50,
+        width: '90%',
+        borderRadius: 50,
+        borderColor: COLORS.primary,
+        marginTop: 15,
+        paddingLeft: 30,
+        color: 'grey',
+        paddingTop: 13,
+        fontSize: 17,
+        backgroundColor: COLORS.white
+        
+    },
+
+    searchIcon:{
+        position: 'absolute',
+        top:26,
+        right:40,
+    },
 })
 
 

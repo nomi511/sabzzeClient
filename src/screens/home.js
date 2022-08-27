@@ -1,21 +1,31 @@
 import React, {useState, useEffect}from 'react'
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, TextInput,ScrollView,SafeAreaView  } from 'react-native'
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ScrollView, Alert,Platform, Linking,  } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import {homeTopList} from '../assets/data/homeTopList'
 import {COLORS} from '../assets/theme'
-import MapView, {Marker} from 'react-native-maps'
+import MapView from 'react-native-maps'
 import marker from '../assets/images/locationMarker.png'
 import * as Location from 'expo-location'
 import { SearchBar, CartBtn, ProductsScrollView, LinkBtn } from '../components/'
 import { useNavigation } from '@react-navigation/core'
-import {useSelector} from 'react-redux'
+import {useSelector, useDispatch} from 'react-redux'
+import { addUser } from '../redux/userSlice'
+
 
 const Home = () => {
 
 
     //redux
     
+    const dispatch = useDispatch()
+
     const products = useSelector(state => state.products)
+    const {user} = useSelector(state=>state.user)
+
+
+    
+
+
     //-------------------------------
 
     const navigation = useNavigation()
@@ -24,33 +34,89 @@ const Home = () => {
     const [region, setregion] = useState({
         latitude: 33.6907,
         longitude: 73.0057,
-        latitudeDelta: 5,
-        longitudeDelta: 5 
+        latitudeDelta: 0.003,
+        longitudeDelta: 0.003 
     })
 
 
+
+    const navigateTo = (val) =>{
+        navigation.navigate(val)
+    }
+
     
 
-    const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
 
     useEffect(() => {
-        (async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            setErrorMsg('Permission to access location was denied');
-            return;
+
+        const openAppSettings = () => {
+            if (Platform.OS === 'ios') {
+              Linking.openURL("app-settings:");
+            } else {
+                Linking.openSettings()
+            }
+
+            ShowAlert()
         }
 
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation({ 
-            latitude: location.coords.latitude, 
-            longitude: location.coords.longitude, 
-            latitudeDelta: 0.003, 
-            longitudeDelta: 0.003
-        });
+
+        const ShowAlert = () =>{
+            if(!user || !user.region){
+                Alert.alert('Location', 'Location Error! Either restart the App or try again', [
+                    {text: 'OK', onPress: () => ShowAlert()},
+                    {text: 'Try Again', onPress: () => getlocation()},
+                ],)
+            }
+        }
+
+
+        const getlocation =async() => {
+            
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setErrorMsg('Permission to access location was denied');
+                Alert.alert('Location', 'Go to settings and give location permission to this app inorder to use the app smoothly.', [
+                    {text: 'Close', onPress: () => getlocation()},
+                    {text: 'Settings', onPress: () => {
+                        openAppSettings()
+                    }},
+                ],)
+                
+                return;
+            }
+
+            
+
+            let location = await Location.getCurrentPositionAsync({});
+            setregion({
+                latitude: location.coords.latitude, 
+                longitude: location.coords.longitude, 
+                latitudeDelta: 0.003, 
+                longitudeDelta: 0.003
+            })
+
+            const userData = {
+                token: 'abcd',
+                location: {
+                    latitude: location?.coords.latitude,
+                    longitude: location?.coords.longitude,
+                },
+                region: {
+                    latitude: location.coords.latitude, 
+                    longitude: location.coords.longitude, 
+                    latitudeDelta: 0.003, 
+                    longitudeDelta: 0.003
+                }
+            }
+
+            dispatch(addUser(userData))
         
-        })();
+        };
+
+        getlocation()
+
+
     }, []);
 
 
@@ -111,7 +177,7 @@ const Home = () => {
 
                 <View style={styles.btns}>
 
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={()=>navigateTo('Products')}>
                         <View style={[styles.btnView,{backgroundColor: COLORS.primary}]}>
                             <Text style={[
                                 styles.btnText, 
@@ -143,7 +209,7 @@ const Home = () => {
                         <MapView 
                             style={styles.mapStyles}
                             initialRegion={region}
-                            region={location}
+                            region={region}
                         />
                         <Image source={marker} style={[
                             {width: 30,height: 30, resizeMode: 'cover'},
